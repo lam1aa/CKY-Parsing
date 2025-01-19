@@ -7,8 +7,21 @@ from model.parser import parse, count
 
 GRAMMAR_PATH = './data/atis-grammar-cnf.cfg'
 
+def ensure_nltk_data():
+    """Ensure required NLTK data is downloaded."""
+    try:
+        nltk.data.find('grammars/large_grammars/atis.cfg')
+        nltk.data.find('grammars/large_grammars/atis_sentences.txt')
+    except LookupError:
+        print("Downloading required NLTK data...")
+        nltk.download('large_grammars')
+        print("Download complete!")
+
 
 def main():
+    # Add data check at start
+    ensure_nltk_data()
+
     parser = argparse.ArgumentParser(
         description='CKY algorithm'
     )
@@ -48,12 +61,77 @@ def main():
     t = nltk.parse.util.extract_test_sentences(s)
 
     if args.structural:
-        # YOUR CODE HERE
-        #     TODO:
-        #         1) Like asked in the instruction, derive at least two sentences that
-        #         exhibit structural ambiguity and indicate the different analyses
-        #         (at least two per sentence) with a syntactic tree.
-        pass
+        # Example 1: "I saw a man with a telescope"
+        # Interpretation 1: I used a telescope to see a man
+        tree1a = Tree.fromstring('''
+            (S 
+                (NP (PRP I))
+                (VP 
+                    (VBD saw)
+                    (NP (DT a) (NN man))
+                    (PP (IN with) 
+                        (NP (DT a) (NN telescope)))))
+        ''')
+        
+        # Interpretation 2: I saw a man who had a telescope
+        tree1b = Tree.fromstring('''
+            (S 
+                (NP (PRP I))
+                (VP 
+                    (VBD saw)
+                    (NP 
+                        (NP (DT a) (NN man))
+                        (PP (IN with)
+                            (NP (DT a) (NN telescope))))))
+        ''')
+
+        # Example 2: "She saw the man on the hill"
+        # Interpretation 1: She saw the man while she was on the hill
+        tree2a = Tree.fromstring('''
+            (S 
+                (NP (PRP She))
+                (VP 
+                    (VBD saw)
+                    (NP (DT the) (NN man))
+                    (PP (IN on)
+                        (NP (DT the) (NN hill)))))
+        ''')
+
+         # Interpretation 2: She saw the man who was on the hill
+        tree2b = Tree.fromstring('''
+            (S 
+                (NP (PRP She))
+                (VP 
+                    (VBD saw)
+                    (NP 
+                        (NP (DT the) (NN man))
+                        (PP (IN on)
+                            (NP (DT the) (NN hill))))))
+        ''')
+
+        print("Example 1: 'I saw a man with a telescope'")
+
+        print("\nTree 1a - PP-attachment 'with a telescope' → VP 'saw'")
+        print("Meaning: The telescope is the instrument used for seeing\n")
+        tree1a.draw()
+       
+        print("\nTree 1b - PP-attachment 'with a telescope' → NP 'man'")
+        print("Meaning: The telescope belongs to the man\n")
+        tree1b.draw()
+
+
+        print("\nExample 2: 'She saw the man on the hill'\n")
+
+        print("\nTree 2a - PP-attachment 'on the hill' → VP 'saw'")
+        print("Meaning: The seeing action occurred while on the hill\n")
+        tree2a.draw()
+        
+       
+        print("\nTree 2b - PP-attachment 'on the hill' → NP 'man'")
+        print("Meaning: The man's location is on the hill")
+        tree2b.draw()
+
+
     elif args.recognizer:
         # YOUR CODE HERE
         #     TODO:
