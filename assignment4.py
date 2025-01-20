@@ -137,8 +137,31 @@ def main():
         #     TODO:
         #         1) Provide a list of grammatical and ungrammatical sentences (at least 10 each)
         #         and test your recognizer on these sentences.
-        grammatical = []
-        ungrammatical = []
+        grammatical = [
+            ["show", "flights", "from", "boston"],
+            ["list", "flights", "to", "denver"],
+            ["show", "flights", "from", "dallas", "to", "boston"],
+            ["list", "american", "airlines", "flights"],
+            ["show", "northwest", "flights"],
+            ["list", "direct", "flights"],
+            ["show", "economy", "flights"],
+            ["list", "morning", "flights"],
+            ["show", "round", "trip", "flights"],
+            ["list", "first", "class", "flights"]
+        ]
+
+        ungrammatical = [
+            ["flights", "show", "from", "boston"],  # wrong word order
+            ["show", "bus", "tickets"],  # out of domain transportation
+            ["list", "flights", "dallas", "to"],  # incomplete structure
+            ["show", "the", "very", "cheap", "flights"],  # invalid adjectives
+            ["reserve", "tickets", "now"],  # invalid verb
+            ["from", "to", "dallas"],  # incorrect preposition sequence
+            ["want", "train", "schedule"],  # out of domain
+            ["show", "hotel", "prices"],  # out of domain
+            ["tickets", "buy", "please"],  # wrong word order
+            ["flights", "flights", "flights"]  # meaningless repetition
+        ]
 
         for sents in grammatical:
             val = recognize(grammar, sents)
