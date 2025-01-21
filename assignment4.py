@@ -183,12 +183,24 @@ def main():
         for idx, sents in enumerate(t):
             tree = parse(grammar, sents[0])
             print("{}\t {}\t \t{}".format(idx, len(tree), sents[1]))
+            # Visualize if sentence has between 2-4 parses
+            if 1 < len(tree) < 5:
+                print(f"\nFound sentence with {len(tree)} parses:")
+                print(f"Sentence: {' '.join(sents[0])}")
+                print("\nGenerating parse trees:")
+                for i, tr in enumerate(tree, 1):
+                    print(f"\nParse {i}:")
+                    tr.draw()
+                #break  # Stop after finding first suitable sentence
 
         # YOUR CODE HERE
         #     TODO:
         #         1) Choose an ATIS test sentence with a number of parses p
         #         such that 1 < p < 5. Visualize its parses. You can use `draw` 
         #         method to do this.
+          
+
+        
 
     elif args.count:
         print("ID\t Predicted_Tree\tLabeled_Tree")

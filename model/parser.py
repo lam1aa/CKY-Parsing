@@ -1,7 +1,27 @@
 import nltk
 
-from typing import Set, List
+from typing import Set, List, Dict, Tuple
+from nltk.tree import Tree, ImmutableTree
 
+def build_trees(bp: Dict, i: int, j: int, symbol: nltk.Nonterminal) -> List[Tree]:
+    trees = []
+    if (i, j, symbol) not in bp:
+        return trees
+    
+    # Handle terminals
+    if isinstance(bp[(i, j, symbol)], str):
+        return [Tree(symbol, [bp[(i, j, symbol)]])]
+    
+    # Handle non-terminals
+    for k, (B, C) in bp[(i, j, symbol)]:
+        left_trees = build_trees(bp, i, k, B)
+        right_trees = build_trees(bp, k, j, C)
+        
+        for left in left_trees:
+            for right in right_trees:
+                trees.append(Tree(symbol, [left, right]))
+    
+    return trees
 
 def parse(grammar: nltk.grammar.CFG, sentence: List[str]) -> Set[nltk.ImmutableTree]:
     """
@@ -20,57 +40,44 @@ def parse(grammar: nltk.grammar.CFG, sentence: List[str]) -> Set[nltk.ImmutableT
     #         should extract the set of all parse trees from the backpointers in the chart.
     #         2) Note that only 'ImmutableTree` can be used as elements of Python sets.
     ############################# STUDENT SOLUTION ##################################
-    n = len(sentence)
-    if n == 0:
+    if not sentence:
         return set()
-
-    # Initialize chart and backpointers    
-    chart = [[set() for _ in range(n+1)] for _ in range(n)]
-    back = [[{} for _ in range(n+1)] for _ in range(n)]
-
-    # Fill terminal entries
-    for i, word in enumerate(sentence):
-        productions = [p for p in grammar.productions() if len(p.rhs()) == 1 
-                      and p.rhs()[0] == word]
-        for prod in productions:
-            lhs = prod.lhs()
-            chart[i][i+1].add(lhs)
-            back[i][i+1][lhs] = word
-
-    # Fill chart with binary rules
+    
+    n = len(sentence)
+    table = [[set() for _ in range(n+1)] for _ in range(n+1)]
+    bp = {}
+    
+    # Terminal rules - simplified backpointer structure
+    for i in range(n):
+        word = sentence[i]
+        for prod in grammar.productions():
+            if len(prod.rhs()) == 1 and isinstance(prod.rhs()[0], str):
+                if prod.rhs()[0] == word:
+                    table[i][i+1].add(prod.lhs())
+                    bp[(i, i+1, prod.lhs())] = word  # Store word directly
+    
+    # Binary rules
     for length in range(2, n+1):
-        for start in range(n-length+1):
-            end = start + length
-            for split in range(start+1, end):
-                for B in chart[start][split]:
-                    for C in chart[split][end]:
-                        productions = [p for p in grammar.productions() if len(p.rhs()) == 2 
-                                    and p.rhs()[0] == B and p.rhs()[1] == C]
-                        for prod in productions:
-                            A = prod.lhs()
-                            chart[start][end].add(A)
-                            if A not in back[start][end]:
-                                back[start][end][A] = []
-                            back[start][end][A].append((B, C, split))
-
-    # Build trees from backpointers
-    def build_trees(start: int, end: int, symbol) -> Set[ImmutableTree]:
-        if end - start == 1:  # Terminal
-            return {ImmutableTree(symbol, [back[start][end][symbol]])}
-            
-        trees = set()
-        for B, C, split in back[start][end][symbol]:
-            b_trees = build_trees(start, split, B)
-            c_trees = build_trees(split, end, C)
-            for b in b_trees:
-                for c in c_trees:
-                    trees.add(ImmutableTree(symbol, [b, c]))
-        return trees
-
-    # Extract all parse trees
+        for i in range(n-length+1):
+            j = i + length
+            for k in range(i+1, j):
+                for prod in grammar.productions():
+                    if len(prod.rhs()) == 2:
+                        B, C = prod.rhs()
+                        if B in table[i][k] and C in table[k][j]:
+                            table[i][j].add(prod.lhs())
+                            key = (i, j, prod.lhs())
+                            if key not in bp:
+                                bp[key] = []
+                            bp[key].append((k, (B, C)))
+    
+    # Build trees
     trees = set()
-    if grammar.start() in chart[0][n]:
-        trees = build_trees(0, n, grammar.start())
+    if grammar.start() in table[0][n]:
+        all_trees = build_trees(bp, 0, n, grammar.start())
+        for tree in all_trees:
+            trees.add(ImmutableTree.convert(tree))
+    
     return trees
     #################################################################################
 
@@ -86,5 +93,5 @@ def count(grammar: nltk.grammar.CFG, sentence: List[str]) -> int:
         tree_count: Number of generated parse trees.
     """
     ############################# STUDENT SOLUTION ##################################
-    return len(parse(grammar, sentence))
+    pass
     #################################################################################
